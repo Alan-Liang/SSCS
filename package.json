@@ -1,34 +1,33 @@
 {
   "name": "sscs",
-  "version": "0.0.1",
+  "version": "0.0.6",
   "description": "Simple and Slow Chatting Service",
   "keywords": [
     "Node.js",
     "application",
     "Chat"
   ],
-  "author": {
-    "name": "Alan?Liang",
-    "email": "yalun0liang@gmail.com",
-    "url": "http://alan.liangcn.ml"
-  },
+  "author": "Alan?Liang <yalun0liang@gmail.com> (http://alan.liangcn.ml)",
   "homepage": "http://alan.liangcn.ml/SSCS",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Alan-Liang/SSCS"
+    "url": "git+https://github.com/Alan-Liang/SSCS.git"
   },
-
   "engines": {
     "node": ">= 0.6.0",
     "npm": ">= 1.0.0"
   },
-
   "dependencies": {
     "mime": "1.3.6"
   },
   "devDependencies": {},
   "bundleDependencies": [],
-  "license": "GPLv3",
-
-  "main": "server.js"
+  "license": "GPL-3.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "bugs": {
+    "url": "https://github.com/Alan-Liang/SSCS/issues"
+  }
 }
