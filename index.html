@@ -1,15 +1,51 @@
-/*
- *@author Alan?Liang
- *@version 1.0.0
- *@name SSCS
- *
- *https://github.com/Alan-Liang/SSCS
- */
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SSCS | KEEER</title>
+<link href="./gs.css" rel="stylesheet" type="text/css" />
+<style>
+body{
+	background:#eef;
+	font-family:Consolas;
+}
+#status{
+	font-weight:bold;
+}
+#clog{
+	width:100%;
+}
+</style>
+</head>
 
-var rc=[];
+<body>
+Manager | SSCS | KEEER
+<hr />
+Port:<input id="port" value="8080" />
+<br />
+regCode:<input id="regcode" value="[]" />
+<br />
+<button id="savecfg" class="blue">Save</button>
+<hr />
+Status:<a id="status">Pending...</a>
+<br />
+<button id="start" class="green">Start</button>
+<button id="stop" class="red">Stop</button>
+<hr />
+<textarea readonly id="clog"></textarea>
 
-var ipaddress = "127.0.0.1";
-var port      = 8080;
+<script>
+var $=function(a){return document.getElementById(a);};
+
+var savecfg=$("savecfg");
+var startsvc=$("start");
+var stopsvc=$("stop");
+
+var statusa=$("status");
+
+var port=$("port");
+var rc=$("regcode");
+var clogi=$("clog");
 
 var http=require("http");
 var fs=require("fs");
@@ -48,24 +84,36 @@ var server;
 function clog(str){
 	var time=new Date().toLocaleString();
 	console.log("["+time+"] "+str+"\n");
-	//clogi.innerHTML+=("["+time+"] "+str+"\n");
+	clogi.innerHTML+=("["+time+"] "+str+"\n");
 };
 
-startsvc=function(){
+savecfg.onclick=function(){
+	try{
+		fs.writeFileSync("config.json", JSON.stringify({"port":parseInt(port.value),"regCode":rc.value}));
+	}catch(e){
+		clog("Error writing config file: "+e);
+		return;
+	}
+	clog("Config file written.");
+};
+
+startsvc.onclick=function(){
 	if(!server){
 		try{
 			server=http.createServer(listeningFunc);
-			server.listen(port,ipaddress);
+			server.listen(parseInt(port.value));
 		}catch(e){
-			clog("Error listening on "+ipaddress+":"+port+": "+e);
+			clog("Error listening on "+port.value+": "+e);
+			statusa.innerHTML="Stopped";
 			server=undefined;
 			return;
 		}
-		clog("Server started, listening on "+ipaddress+":"+port+".");
+		clog("Server started, listening on "+port.value+".");
+		statusa.innerHTML="Started";
 	}
 };
 
-stopsvc=function(){
+stopsvc.onclick=function(){
 	if(server){
 		try{
 			server.close();
@@ -74,9 +122,21 @@ stopsvc=function(){
 			return;
 		}
 		clog("Server stopped.");
+		statusa.innerHTML="Stopped";
 		server=undefined;
 	}
 };
+
+
+var cfg;
+try{
+	cfg=fs.readFileSync("config.json");
+	cfg=JSON.parse(cfg);
+	port.value=cfg.port?cfg.port:"";
+	rc.value=cfg.regCode?cfg.regCode:"";
+}catch(e){
+	clog("Error reading config: "+e);
+}
 
 var hist;
 try{
@@ -86,12 +146,12 @@ try{
 }catch(e){
 	clog("Error reading history: "+e);
 	chistory={};
-	for(var i=0;i<rc.length;i++){
-		chistory[rc[i]]=[];
+	for(var i=0;i<eval(rc.value).length;i++){
+		chistory[eval(rc.value)[i]]=[];
 	}
 }
 
-startsvc();
+startsvc.onclick();
 
 var loadpages=["chat.html","gs.css"];
 for(var i=0;i<loadpages.length;i++){
@@ -105,8 +165,8 @@ for(var i=0;i<loadpages.length;i++){
 
 function pendReq(req){
     var params = url.parse(req.url,true).query;
-	for(var i=0;i<rc.length;i++)
-		if(params["rc"]==rc[i])return rc[i];
+	for(var i=0;i<eval(rc.value).length;i++)
+		if(params["rc"]==eval(rc.value)[i])return eval(rc.value)[i];
 	return false;
 }
 
@@ -220,3 +280,6 @@ vurl.add={path:"webapi/login",func:function(req,resp){
 	resp.write("Unauthorized");
 	resp.end();
 }};
+</script>
+</body>
+</html>
