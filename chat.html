@@ -1,0 +1,197 @@
+<!doctype html>
+<html>
+<head>
+<!--
+
+SSCS
+Simple and Slow Chatting Service
+by Alan?Liang
+https://github.com/Alan-Liang/SSCS
+
+Using button design of Google Apps-script(gs.css)
+https://developers.google.com/apps-script/add-ons/css
+terms on https://developers.google.com/apps-script/terms
+
+-->
+<meta charset="utf-8">
+<title>SSCS</title>
+<link href="./gs.css" rel="stylesheet" type="text/css" />
+<link href="http://alan.liangcn.ml/SSCS/patch.css" rel="stylesheet" type="text/css" />
+<script language="x/templ" id="templ">
+<span class="time">[{{time}}]</span>
+<span class="user">{{user}}</span>
+<a href="#msg{{id}}">#{{id}}</a>
+<br />
+<span class="text">{{text}}</span>
+<hr />
+</script>
+<style>
+body{
+	background:#eef;
+	font-family:Consolas;
+}
+#sendmsg{
+	position:fixed;
+	bottom:0px;
+}
+#msgbox{
+	width:90%;
+}
+#sendbtn{
+	width:8%;
+	min-width:50px;
+}
+#sendmsg{
+	width:100%;
+}
+#header{
+	position:fixed;
+	width:100%;
+	background:#dde;
+}
+</style>
+</head>
+
+<body>
+<div id="header">
+SSCS
+<hr />
+</div>
+SSCS
+<hr />
+<div id="chatroom">
+</div>
+<br />
+<br />
+<div id="sendmsg">
+<input id="msgbox" />
+<button id="sendbtn" class="blue">Send</button>
+</div>
+
+<!--Scripts-->
+<script>
+var $=function(a){return document.getElementById(a);};
+function debug(str){
+	var debug=false;
+	if(debug)alert(str);
+}
+
+var templ=$("templ").innerHTML;
+var chatroom=$("chatroom");
+var msgbox=$("msgbox");
+var sendbtn=$("sendbtn");
+
+var rc;
+try{
+	var a=(window.location.search.substr(/rc=/.exec(window.location.search).index+3));
+	var b=/&/.exec(a);
+	b=b?b.index:undefined;
+	a=a.substr(0,b);
+	rc=a?a:prompt("regCode:");
+}catch(e){}
+var user;
+try{
+	var a=(window.location.search.substr(/uname=/.exec(window.location.search).index+6));
+	var b=/&/.exec(a);
+	b=b?b.index:undefined;
+	a=a.substr(0,b);
+	user=a?a:prompt("username:");
+}catch(e){}
+var last=-1;
+
+function tpl(chatmsg,str,idn){
+	var st=/{{[a-zA-Z]*}}/gi;
+	var res="";
+	var comp;
+	var last=0;
+	var flag=false;
+	while(comp=st.exec(str)){
+		res+=str.substring(last,comp.index);
+		flag=true;
+		last=comp.index+comp[0].length;
+		var pps=str.substring(comp.index+2,last-2);
+		var val;
+		if(pps=="time")chatmsg[idn][pps]=new Date(chatmsg[idn][pps]).toString();
+		if((val=chatmsg[idn][pps])!=undefined)res+=val;
+		else res+=("{{"+pps+"}}");
+	}
+	res+=str.substring(last,str.length);
+	return res;
+}
+var newdiv;
+function loadmsg(chatmsg,clearflag){
+	if(clearflag)chatroom.innerHTML="";
+	for(var i=0;i<chatmsg.length;i++){
+		newdiv=document.createElement("div");
+		newdiv.className="chat_msg";
+		newdiv.innerHTML=tpl(chatmsg,templ,i);
+		newdiv.id="msg"+chatmsg[i].id;
+		chatroom.appendChild(newdiv);
+	}
+	debug(templ);
+	var a=chatmsg[chatmsg.length-1];
+	var b=a?a:{id:-1};
+	return b.id;
+}
+
+sendbtn.onclick=function(){
+	if(!(msgbox.value&&(msgbox.value!="")))return;
+	httppost("/webapi/add?rc="+rc,
+		{"time":new Date(),
+			"user":user,
+			"text":msgbox.value},
+		function(){});
+	msgbox.value="";
+	msgbox.focus();
+};
+
+msgbox.onkeypress=function(e){
+	if(e.charCode==13)sendbtn.onclick();
+};
+
+function httpget(path,callback){
+	var xhr=new XMLHttpRequest();
+	xhr.open('get',path);
+	xhr.onreadystatechange=function() {
+	    if(this.readyState!=4) return;
+		callback(xhr.status,xhr.response);
+	}
+	xhr.send();
+	return;
+}
+function httppost(path,podata,callback){
+	var xhrpost=new XMLHttpRequest();
+	xhrpost.open('post',path);
+	xhrpost.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+	xhrpost.send(JSON.stringify(podata));
+	xhrpost.onreadystatechange=function() {
+	    if(this.readyState!=4) return;
+    	if(xhrpost.status==200) { // OK, New data
+			callback(xhrpost.response);
+    	}
+	}
+	try{xhrpost.send();}catch(e){console.log(e);}
+}
+
+httpget("/webapi/history?rc="+rc,function(stat,resp){
+	if(stat!=200)return;
+	try{
+		last=loadmsg(JSON.parse(resp).chistory);
+		window.scrollTo(4294967296,4294967296);
+	}catch(e){}
+});
+setInterval(function(){
+	httpget("/webapi/new?rc="+rc+"&last="+(last+1),function(stat,resp){
+		if(stat!=200)return;
+		try{
+			var a=loadmsg(JSON.parse(resp).nw);
+			last=(a!=-1)?a:last;
+			if(a!=-1)window.scrollTo(4294967296,4294967296);
+		}catch(e){}
+	});
+},1000);
+window.scrollTo(4294967296,4294967296);
+</script>
+<script src="http://alan.liangcn.ml/SSCS/patch.js"></script>
+</body>
+</html>
