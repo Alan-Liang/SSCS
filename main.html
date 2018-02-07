@@ -14,6 +14,7 @@ terms on https://developers.google.com/apps-script/terms
 
 -->
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Login | SSCS</title>
 <link href="./gs.css" rel="stylesheet" type="text/css" />
 <style>
@@ -25,15 +26,40 @@ body{
 </head>
 
 <body>
-</div>
 SSCS
 <hr />
 <form action="/webapi/login" method="get">
-Username:<input name="uname" />
+Username:<input name="uname"/>
 <br />
-RoomCode:<input name="rc" />
+RoomCode:<input name="rc"/>
 <br />
-<input type="submit" class="blue" value="Login">
+<input type="submit" class="blue" value="Login" id="buttonLogin">
 </form>
 </body>
+<script>
+	console.log("running..\n");
+			var userAgentInfo = navigator.userAgent;
+			var Agents = ["Android", "iPhone","SymbianOS", "Windows Phone", "iPod"];
+			var flag = true;
+			for (var v = 0; v < Agents.length; v++) 
+			{
+				if (userAgentInfo.indexOf(Agents[v]) > 0) 
+				{
+					flag = false;
+					break;
+				}
+			}
+			if(window.screen.width>=768)
+			{
+				 flag = true;
+				 //alert("PC!");
+			}
+			if(!flag)
+			{
+				document.getElementById('buttonLogin').style.width = "280px";
+				document.getElementById('buttonLogin').style.height = "39px";
+				document.getElementById('buttonLogin').style.fontSize = "23px";
+			}
+	console.log(flag);
+</script>
 </html>
