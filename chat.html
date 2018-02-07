@@ -28,26 +28,47 @@ terms on https://developers.google.com/apps-script/terms
 </script>
 <style>
 body{
-	background:#eef;
-	font-family:Consolas;
+  background:#eef;
+  font-family:Consolas;
 }
 #sendmsg{
-	position:fixed;
-	bottom:0px;
+  position:fixed;
+  bottom:0px;
 }
 #msgbox{
-	width:70%;
+  width: 100%;
+  height: 100%;
 }
 #sendbtn{
-	width:8%;
+  width:8%;
+  float: right;
+  margin: 0 16px 0 10px;
 }
 #sendmsg{
-	width:100%;
+  width:100%;
+  display: table;
+}
+#msgbox_wrapper{
+  width: 100000px;
+  display: table-cell;
+  height: 14px;
+}
+@media (max-width:768px){ /* Mobile Enhancement */
+  #sendbtn{
+    height: 32px;
+    font-size: 16px;
+  }
+}
+@media (min-width:769px){
+  #msgbox_wrapper{
+    position: relative;
+    top:-10px;
+  }
 }
 #header{
-	position:fixed;
-	width:100%;
-	background:#dde;
+  position:fixed;
+  width:100%;
+  background:#dde;
 }
 </style>
 </head>
@@ -64,38 +85,16 @@ SSCS|KEEER
 <br />
 <br />
 <div id="sendmsg">
-<input id="msgbox" />
+<div id="msgbox_wrapper"><input id="msgbox" /></div>
 <button id="sendbtn" class="blue">Send</button>
 </div>
 
 <!--Scripts-->
 <script>
-var userAgentInfo = navigator.userAgent;
-var Agents = ["Android", "iPhone","SymbianOS", "Windows Phone", "iPod"];
-var flag = true;
-for (var v = 0; v < Agents.length; v++) 
-{
-	if (userAgentInfo.indexOf(Agents[v]) > 0) 
-	{
-		alert(Agents[v]);
-		flag = false;
-		break;
-	}
-}
-if(window.screen.width>=768)
-{
-	flag = true;
-}
-if(!flag)
-{
-	document.getElementById('msgbox').style.height = "32px";
-	document.getElementById('sendbtn').style.height = "32px";
-	document.getElementById('sendbtn').style.fontSize = "18px";
-}
 var $=function(a){return document.getElementById(a);};
 function debug(str){
-	var debug=false;
-	if(debug)alert(str);
+  var debug=false;
+  if(debug)alert(str);
 }
 
 var templ=$("templ").innerHTML;
@@ -105,115 +104,112 @@ var sendbtn=$("sendbtn");
 
 var rc;
 try{
-	var a=(window.location.search.substr(/rc=/.exec(window.location.search).index+3));
-	var b=/&/.exec(a);
-	b=b?b.index:undefined;
-	a=a.substr(0,b);
-	rc=a?a:prompt("regCode:");
+  var a=(window.location.search.substr(/rc=/.exec(window.location.search).index+3));
+  var b=/&/.exec(a);
+  b=b?b.index:undefined;
+  a=a.substr(0,b);
+  rc=a?a:prompt("regCode:");
 }catch(e){}
 var user;
 try{
-	var a=(window.location.search.substr(/uname=/.exec(window.location.search).index+6));
-	var b=/&/.exec(a);
-	b=b?b.index:undefined;
-	a=a.substr(0,b);
-	user=a?a:prompt("username:");
+  var a=(window.location.search.substr(/uname=/.exec(window.location.search).index+6));
+  var b=/&/.exec(a);
+  b=b?b.index:undefined;
+  a=a.substr(0,b);
+  user=a?a:prompt("username:");
 }catch(e){}
 var last=-1;
 
 function tpl(chatmsg,str,idn){
-	var st=/{{[a-zA-Z]*}}/gi;
-	var res="";
-	var comp;
-	var last=0;
-	var flag=false;
-	while(comp=st.exec(str)){
-		res+=str.substring(last,comp.index);
-		flag=true;
-		last=comp.index+comp[0].length;
-		var pps=str.substring(comp.index+2,last-2);
-		var val;
-		if(pps=="time")chatmsg[idn][pps]=new Date(chatmsg[idn][pps]).toString();
-		if((val=chatmsg[idn][pps])!=undefined)res+=val;
-		else res+=("{{"+pps+"}}");
-	}
-	res+=str.substring(last,str.length);
-	return res;
+  var st=/{{[a-zA-Z]*}}/gi;
+  var res="";
+  var comp;
+  var last=0;
+  var flag=false;
+  while(comp=st.exec(str)){
+    res+=str.substring(last,comp.index);
+    flag=true;
+    last=comp.index+comp[0].length;
+    var pps=str.substring(comp.index+2,last-2);
+    var val;
+    if(pps=="time")chatmsg[idn][pps]=new Date(chatmsg[idn][pps]).toString();
+    if((val=chatmsg[idn][pps])!=undefined)res+=val;
+    else res+=("{{"+pps+"}}");
+  }
+  res+=str.substring(last,str.length);
+  return res;
 }
 var newdiv;
 function loadmsg(chatmsg,clearflag){
-	if(clearflag)chatroom.innerHTML="";
-	for(var i=0;i<chatmsg.length;i++){
-		newdiv=document.createElement("div");
-		newdiv.className="chat_msg";
-		newdiv.innerHTML=tpl(chatmsg,templ,i);
-		newdiv.id="msg"+chatmsg[i].id;
-		chatroom.appendChild(newdiv);
-	}
-	debug(templ);
-	var a=chatmsg[chatmsg.length-1];
-	var b=a?a:{id:-1};
-	return b.id;
+  if(clearflag)chatroom.innerHTML="";
+  for(var i=0;i<chatmsg.length;i++){
+    newdiv=document.createElement("div");
+    newdiv.className="chat_msg";
+    newdiv.innerHTML=tpl(chatmsg,templ,i);
+    newdiv.id="msg"+chatmsg[i].id;
+    chatroom.appendChild(newdiv);
+  }
+  debug(templ);
+  var a=chatmsg[chatmsg.length-1];
+  var b=a?a:{id:-1};
+  return b.id;
 }
 
 sendbtn.onclick=function(){
-	if(!(msgbox.value&&(msgbox.value!="")))return;
-	httppost("/webapi/add?rc="+rc,
-		{"time":new Date(),
-			"user":user,
-			"text":msgbox.value},
-		function(){});
-	msgbox.value="";
-	if(flag)
-		msgbox.focus();
-	else 
-		window.scrollTo(4294967296,4294967296);
+  if(!(msgbox.value&&(msgbox.value!="")))return;
+  httppost("/webapi/add?rc="+rc,
+    {"time":new Date(),
+      "user":user,
+      "text":msgbox.value},
+    function(){});
+  msgbox.value="";
+  msgbox.focus();
 };
 
 msgbox.onkeypress=function(e){
-	if(e.charCode==13)sendbtn.onclick();
+  if(e.charCode==13)sendbtn.onclick();
 };
 
 function httpget(path,callback){
-	var xhr=new XMLHttpRequest();
-	xhr.open('get',path);
-	xhr.onreadystatechange=function() {
-	    if(this.readyState!=4) return;
-		callback(xhr.status,xhr.response);
-	}
-	xhr.send();
-	return;
+  var xhr=new XMLHttpRequest();
+  xhr.open('get',path);
+  xhr.onreadystatechange=function() {
+      if(this.readyState!=4) return;
+    callback(xhr.status,xhr.response);
+  }
+  xhr.send();
+  return;
 }
 function httppost(path,podata,callback){
-	var xhrpost=new XMLHttpRequest();
-	xhrpost.open('post',path);
-	xhrpost.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
-	xhrpost.send(JSON.stringify(podata));
-	xhrpost.onreadystatechange=function() {
-	    if(this.readyState!=4) return;
-    	if(xhrpost.status==200) { // OK, New data
-			callback(xhrpost.response);
-    	}
-	}
-	try{xhrpost.send();}catch(e){console.log(e);}
+  var xhrpost=new XMLHttpRequest();
+  xhrpost.open('post',path);
+  xhrpost.setRequestHeader('Content-Type','application/x-www-form-urlencoded');
+  xhrpost.send(JSON.stringify(podata));
+  xhrpost.onreadystatechange=function() {
+      if(this.readyState!=4) return;
+      if(xhrpost.status==200) { // OK, New data
+      callback(xhrpost.response);
+      }
+  }
+  try{xhrpost.send();}catch(e){console.log(e);}
 }
 
 httpget("/webapi/history?rc="+rc,function(stat,resp){
-	if(stat!=200)return;
-	try{
-		last=loadmsg(JSON.parse(resp).chistory);
-		window.scrollTo(4294967296,4294967296);
-	}catch(e){}
+  if(stat!=200)return;
+  try{
+    last=loadmsg(JSON.parse(resp).chistory);
+    window.scrollTo(4294967296,4294967296);
+  }catch(e){}
 });
 setInterval(function(){
-	httpget("/webapi/new?rc="+rc+"&last="+(last+1),function(stat,resp){
-		if(stat!=200)return;
-		try{
-			var a=loadmsg(JSON.parse(resp).nw);
-			last=(a!=-1)?a:last;
-			if(a!=-1)window.scrollTo(4294967296,4294967296);
-		}catch(e){}
-	});
+  httpget("/webapi/new?rc="+rc+"&last="+(last+1),function(stat,resp){
+    if(stat!=200)return;
+    try{
+      var a=loadmsg(JSON.parse(resp).nw);
+      last=(a!=-1)?a:last;
+      if(a!=-1)window.scrollTo(4294967296,4294967296);
+    }catch(e){}
+  });
 },1000);
 window.scrollTo(4294967296,4294967296);
 </script>
