@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>{{loginTitle}}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link href="./mdc.css" rel="stylesheet" type="text/css" />
+<style>
+/* commons */
+.width-100{
+	width:100%;
+}
+.no-padding{
+	padding:0;
+	min-height:0;
+}
+.align-center{
+	text-align:center;
+}
+.align-right{
+	text-align:right;
+}
+[hidden], .hidden{
+	display:none;
+}
+.atme{
+	font-weight:bold;
+	color:#e00;
+}
+
+body{
+	margin:0;
+}
+#header-pad{
+	height:64px;
+}
+#appbar{
+	//todo
+}
+#messages{
+	margin:10px;
+	margin-bottom:64px;
+}
+.message{
+	margin-top:10px;
+}
+.mdc-card{
+	padding:5px;
+}
+#sendbox{
+	position:fixed;
+	bottom:0;
+	background:#fff;
+}
+.message-header{
+	display:table;
+	width:100%;
+}
+.message-head,.message-actions{
+	display:table-cell;
+}
+.message-actions{
+	width:150px;
+}
+form{
+	margin:10px;
+}
+</style>
+<!--script type="text/javascript" src="https://res.wx.qq.com/mmbizwap/zh_CN/htmledition/js/vconsole/3.0.0/vconsole.min.js"></script-->
+</head>
+<body>
+<header class="mdc-top-app-bar mdc-elevation--z5 {{hideAppBar}}" id="appbar" data-mdc-auto-init="MDCTopAppBar">
+  <div class="mdc-top-app-bar__row">
+    <section class="mdc-top-app-bar__section">
+      <span class="mdc-top-app-bar__title align-center width-100">{{loginTitle}}</span>
+    </section>
+  </div>
+</header>
+<div id="header-pad"></div>
+<form action="/webapi/login" method="GET">
+<div class="mdc-text-field" data-mdc-auto-init="MDCTextField">
+  <input type="text" id="uname" name="uname" class="mdc-text-field__input">
+  <label class="mdc-floating-label" for="uname">Username</label>
+  <div class="mdc-line-ripple"></div>
+</div>
+<br />
+<div class="mdc-text-field" data-mdc-auto-init="MDCTextField">
+  <input type="text" id="rc" name="rc" class="mdc-text-field__input">
+  <label class="mdc-floating-label" for="rc">Room Code</label>
+  <div class="mdc-line-ripple"></div>
+</div>
+<br />
+<input type="submit" data-mdc-auto-init="MDCRipple" class="mdc-button mdc-button--raised" value="Login" />
+</form>
+<script src="./mdc.js"></script>
+<script>mdc.autoInit();//var vc=new VConsole();</script>
+
+</body>
+</html>

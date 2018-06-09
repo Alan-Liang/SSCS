@@ -1,25 +1,24 @@
 /*
  *@author Alan?Liang
- *@version 1.0.0
+ *@version 0.1.0
  *@name SSCS
  *
  *https://github.com/Alan-Liang/SSCS
  */
 
-exports.rc=[];
-
-exports.ipaddress = "127.0.0.1";
-exports.port      = 8080;
-
-var http=require("http");
 var fs=require("fs");
-var mime=require('mime');
-var url=require('url');
-var vurl=require('./vurl');
+var mime=require("mime");
+var url=require("url");
+var vurl=require("./vurl");
+var ws=require("ws");
 
-exports.chistory={};
+var sscs=exports=module.exports=function sscs(config){
+	for(i in config){
+		this[i]=config[i];
+	}
+};
 
-var listeningFunc=function(req,resp){
+var handleRequest=sscs.prototype.handleRequest=function(req,resp){
 	// Parse the request containing file name
 	var pathname = url.parse(req.url).pathname.substr(1);
 	if(cache[pathname]){
@@ -29,21 +28,101 @@ var listeningFunc=function(req,resp){
 		resp.end();
 		return;
 	}
+	if(pathname==""){
+		var type="text/html";
+		resp.writeHead(200, {'Content-Type':type});	
+		resp.write(cache["index.html"]);
+		resp.end();
+		return;
+	}
 	if(vurl.query(pathname)){
-//		try{
-			(vurl.query(pathname))(req,resp);
+		try{
+			vurl.query(pathname).call(this,req,resp);
 			return;
-	/*	}catch(e){
-			clog("Error executing "+pathname+" : "+e);
-			resp.writeHead(501, {'Content-Type':'text/plain'});	
-			resp.end();
-			return;
-		}*/
+		}catch(e){
+			try{
+				clog("Error executing "+pathname+" : "+e.stack);
+				resp.writeHead(501, {'Content-Type':'text/plain'});	
+				resp.end();
+				return;
+			}catch(e){}
+		}
 	}
 };
+sscs.prototype.endl="\r\n";
+sscs.prototype.errmsg={
+	roomNotExist:"This room does not exist.",
+	internal:"Something bad happens. See log for details.",
+	jsonInvalid:"The webpage encounters an error. For more details, the JSON it send is invalid.",
+	badRequest:"The webpage sent us a bad request."
+};
+sscs.prototype.wsConnections={};
+var handleWs=sscs.prototype.handleWs=function(wsc,req){
+	try{
+		var trc=this.pendReq(req);
+		if(!trc){
+			wsc.send("ERR! "+this.errmsg.roomNotExist+this.endl);
+			wsc.close(1000,"normal");
+			return;
+		}
+		var wscs=this.wsConnections;
+		wscs[trc]?(wscs[trc].push(wsc)):(wscs[trc]=[wsc]);
+		wscs=wscs[trc];
+		wsc._dataPile="";
+		var endl=this.endl;
+		wsc.send("HIST"+this.getHistory(trc)+endl);
+		wsc.addEventListener('message',function(msg){
+			wsc._dataPile+=msg.data;
+			var cmds=wsc._dataPile.split(endl);
+			if(cmds.length>1){
+				for(var i=0;i<cmds.length-1;i++){
+					var args=cmds[i].split(" ");
+					switch(args[0]){
+						case "CHAT":
+						if(!args[1])
+							break;
+						var params;
+						try{
+							params=JSON.parse(args[1]);
+						}catch(e){
+							wsc.send("ERR! "+this.errmsg.jsonInvalid+endl);
+						}
+						if(params["time"]&&params["user"]&&params["text"]){
+							var obj={
+								time:decodeURI(params.time),
+								user:decodeURI(params.user),
+								text:decodeURI(params.text)
+							};
+							this.pushHistory(trc,obj);
+							var msg=JSON.stringify(obj);
+							for(var i=0;i<wscs.length;i++){
+								var c=wscs[i];
+								try{
+									c.send("CHAT "+msg+endl);
+								}catch(e){}
+							}
+						}
+						
+						case "ERR!":
+						clog("client complaints our fault: "+args[1]);
+						break;
+						
+						default:
+						wsc.send("ERR!"+this.errmsg.badRequest+endl);
+						break;
+					}
+				}
+				wsc._dataPile=cmds[cmds.length-1];
+			}
+		}.bind(this));
+	}catch(e){try{
+		wsc.send("ERR! "+this.errmsg.internal+endl);
+		wsc.close(1000,"normal");
+		clog(e.stack);
+	}catch(e){}}
+};
 
-var cache={};
-var server;
+var cache=sscs.cache={};
 
 function clog(str){
 	var time=new Date().toLocaleString();
@@ -51,69 +130,104 @@ function clog(str){
 	//clogi.innerHTML+=("["+time+"] "+str+"\n");
 };
 
-exports.startsvc=function(){
-	if(!server){
-		try{
-			server=http.createServer(listeningFunc);
-			server.listen(this.port,this.ipaddress);
-		}catch(e){
-			clog("Error listening on "+this.ipaddress+":"+this.port+": "+e);
-			server=undefined;
-			return;
-		}
-		clog("Server started, listening on "+this.ipaddress+":"+this.port+".");
-	}
+sscs.prototype.loadHistory=function(){	
 	var hist;
 	try{
 		hist=fs.readFileSync("history.json");
 		hist=JSON.parse(hist);
-		exports.chistory=hist?hist:{};
+		return hist?hist:{};
 	}catch(e){
 		clog("Error reading history: "+e);
-		exports.chistory={};
-		for(var i=0;i<exports.rc.length;i++){
-			exports.chistory[exports.rc[i]]=[];
+		var hist={};
+		for(var i=0;i<this.rc.length;i++){
+			hist[this.rc[i]]=[];
 		}
+		return hist;
 	}
 };
-
-exports.stopsvc=function(){
-	if(server){
+sscs.prototype.pushHistory=function(trc,obj){
+	obj.id=this.history[trc].length;
+	this.history[trc].push(obj);
+	try{
+		fs.writeFileSync("./history.json",JSON.stringify(this.history));
+	}catch(e){
+		clog("Error writing history file :"+e);
+	}
+	return obj.id;
+};
+sscs.prototype.getHistory=function(rc){
+	return this.history[rc];
+};
+sscs.prototype.getNews=function(rc,last){
+	var news=[],hist=this.history[rc];
+	for(var i=0;i<hist.length;i++){
+		if(hist[i].id>=last){
+			news.push(hist[i]);
+		}
+	}
+	return news;
+};
+sscs.prototype.startsvc=function(){
+	if(!this.server){
 		try{
-			server.close();
+			this.server=http.createServer(this.handleRequest.bind(this));
+			this.server.listen(this.port,this.ipaddress);
+			if(this.ws){
+				this.wsServer=new ws.Server({server:this.server});
+				this.wsServer.on("connection",this.handleWs.bind(this));
+			}
+		}catch(e){
+			clog("Error listening on "+this.ipaddress+":"+this.port+": "+e);
+			this.server=undefined;
+			return;
+		}
+		clog("Server started, listening on "+this.ipaddress+":"+this.port+".");
+	}
+	//doAction
+	this.history=this.loadHistory();
+	this.loadPages();
+	//doAction
+	clog("History loaded.");
+};
+
+sscs.prototype.stopsvc=function(){
+	if(this.server){
+		try{
+			this.server.close();
 		}catch(e){
 			clog("Error closing: "+e);
 			return;
 		}
 		clog("Server stopped.");
-		server=undefined;
+		this.server=undefined;
 	}
 };
 
-var loadpages=["chat.html","gs.css"];
-for(var i=0;i<loadpages.length;i++){
-	try{
-		var page=fs.readFileSync("./node_modules/sscs/"+loadpages[i]);
-		cache[loadpages[i]]=page;
-	}catch(e){
-		clog("Error reading file "+loadpages[i]+" : "+e);
+sscs.prototype.pages=["mdc.css","mdc.js","chat.html","index.html"];
+sscs.prototype.loadPages=function(){
+	for(var i=0;i<this.pages.length;i++){
+		try{
+			var page=fs.readFileSync(__dirname+"/"+this.pages[i]);
+			cache[this.pages[i]]=page;
+		}catch(e){
+			clog("Error reading file "+this.pages[i]+" : "+e.stack);
+		}
 	}
-}
+};
 
-this.pendReq=function(req){
+sscs.prototype.pendReq=function(req){
     var params = url.parse(req.url,true).query;
-	for(var i=0;i<exports.rc.length;i++)
-		if(params["rc"]==exports.rc[i])return exports.rc[i];
+	for(var i=0;i<this.rc.length;i++)
+		if(params["rc"]==this.rc[i])return this.rc[i];
 	return false;
 }
-var pendReq=this.pendReq;
 
 //add listening functions
 vurl.add={path:"webapi/history",func:function(req,resp){
 	var trc;
-	if((trc=pendReq(req))!=false){
+	if((trc=this.pendReq(req))!=false){
 		resp.writeHead(200, {'Content-Type':'application/json'});
-		resp.write(JSON.stringify({chistory:exports.chistory[trc]}));
+		resp.write(JSON.stringify({history:this.getHistory(trc)}));
 		resp.end();
 		return;
 	}
@@ -123,35 +237,27 @@ vurl.add={path:"webapi/history",func:function(req,resp){
 }};
 vurl.add={path:"webapi/new",func:function(req,resp){
 	var trc;
-	if((trc=pendReq(req))!=false){
+	if((trc=this.pendReq(req))!=false){
 		var params = url.parse(req.url,true).query;
 		if(params["last"]){
 			resp.writeHead(200, {'Content-Type':'application/json'});
-			resp.write("{\"nw\":[");
-			for(var i=exports.chistory[trc].length-1;i>=0;i--){
-				if(exports.chistory[trc][i].id==params.last){
-					for(var c=i;c<exports.chistory[trc].length;c++){
-						resp.write(JSON.stringify(exports.chistory[trc][c]));
-						if((c+1)<exports.chistory[trc].length)resp.write(",");
-					}
-				}
-			}
-			resp.write("]}");
+			var news={news:this.getNews(trc,parseInt(params.last))};
+			resp.write(JSON.stringify(news));
 			resp.end();
 			return;
 		}
 		resp.writeHead(400, {'Content-Type':'application/json'});
-		resp.write("bad parameter");
+		resp.write(JSON.stringify({err:400,message:"Bad parameter"}));
 		resp.end();
 		return;
 	}
-	resp.writeHead(403, {'Content-Type':'text/plain'});
-	resp.write("403 unauthorized");
+	resp.writeHead(403, {'Content-Type':'application/json'});
+	resp.write(JSON.stringify({err:403,message:"Unauthorized"}));
 	resp.end();
 }};
 vurl.add={path:"webapi/add",func:function(req,resp){
 	var trc;
-	if((trc=pendReq(req))!=false){
+	if((trc=this.pendReq(req))!=false){
 		var postData="";
 		req.setEncoding("utf8");
 		req.addListener("data", function(postDataChunk) {
@@ -161,19 +267,13 @@ vurl.add={path:"webapi/add",func:function(req,resp){
 			try{
 				var params = JSON.parse(postData);
 				if(params["time"]&&params["user"]&&params["text"]){
-					exports.chistory[trc].push({
+					var id=this.pushHistory(trc,{
 						time:decodeURI(params.time),
 						user:decodeURI(params.user),
-						text:decodeURI(params.text),
-						id:exports.chistory[trc].length
-						});
-					try{
-						fs.writeFileSync("./history.json",JSON.stringify(exports.chistory));
-					}catch(e){
-						clog("Error writing history file :"+e);
-					}
+						text:decodeURI(params.text)
+					});
 					resp.writeHead(200, {'Content-Type':'application/json'});
-					resp.write("{status:"+(exports.chistory[trc].length-1)+"}");
+					resp.write("{status:"+id+"}");
 					resp.write(postData);
 				}
 				else{
@@ -183,32 +283,21 @@ vurl.add={path:"webapi/add",func:function(req,resp){
 				resp.end();
 			}catch(e){
 				resp.writeHead(501, {'Content-Type':'application/json'});
-				clog("Error adding message :"+e);
-				resp.end();
-				}
-		});
+				clog("Error adding message :"+e.stack);
+				resp.end(JSON.stringify({err:501,message:"Error adding message."}));
+			}
+		}.bind(this));
 	}else{
-		resp.writeHead(403, {'Content-Type':'text/plain'});
-		resp.write("403 unauthorized");
+		resp.writeHead(403, {'Content-Type':'application/json'});
+		resp.write(JSON.stringify({err:403,message:"Unauthorized"}));
 		resp.end();
 	}
 }};
-try{
-	exports.loginp=fs.readFileSync("./node_modules/sscs/main.html");
-}catch(e){
-	clog("Error reading file main.html : "+e);
-	loginp="";
-}
-vurl.add={path:"",func:function(req,resp){
-	resp.writeHead(200, {'Content-Type':'text/html'});
-	resp.write(exports.loginp);
-	resp.end();
-}};
-
 
 vurl.add={path:"webapi/login",func:function(req,resp){
 	var trc;
-	if((trc=pendReq(req))!=false){
+	console.log(req);
+	if((trc=this.pendReq(req))!=false){
 		var params = url.parse(req.url,true).query;
 		resp.writeHead(302, {'Location':'/chat.html?rc='+encodeURI(trc)+'&uname='+encodeURI(params.uname)});
 		resp.end();
