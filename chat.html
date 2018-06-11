@@ -32,6 +32,8 @@ body{
 }
 #header-pad{
 	height:64px;
+	margin:0;
+	padding:0;
 }
 #appbar{
 	//todo
@@ -59,16 +61,22 @@ body{
 	display:table-cell;
 }
 .message-actions{
-	width:150px;
+	width:32px;
+}
+.focused{
+	background:#fff9c4;
+}
+.focused-blur{
+	transition:ease-out background-color 1s;
 }
 </style>
 <script language="x/template" id="templ">
 <div class="message mdc-card mdc-typography--subtitle1" id="msg_{{id}}">
   <div class="message-header">
-    <span class="message-head">[{{time}}] {{user}}:</span>
+    <span class="message-head">{{user}} <a class="mdc-button" data-mdc-auto-init="MDCRipple" href="javascript:showTime(&quot;{{time}}&quot;);">{{timeago}}</a>:</span>
     <div class="mdc-card__actions no-padding align-right message-actions">
       <div class="mdc-card__action-buttons">
-        <a data-mdc-auto-init="MDCRipple" href="#msg_{{id}}" class="mdc-button mdc-card__action mdc-card__action--button">PermaLink-#{{id}}</a>
+        <a data-mdc-auto-init="MDCRipple" href="#msg_{{id}}" class="mdc-button mdc-card__action mdc-card__action--button">&para; #{{id}}</a>
       </div>
     </div>
   </div>
@@ -80,32 +88,128 @@ body{
 <body>
 <header class="mdc-top-app-bar mdc-elevation--z5 {{hideAppBar}}" id="appbar" data-mdc-auto-init="MDCTopAppBar">
   <div class="mdc-top-app-bar__row">
-    <section class="mdc-top-app-bar__section">
+    <section class="mdc-top-app-bar__section width-100">
       <span class="mdc-top-app-bar__title align-center width-100">{{title}}</span>
+    </section>
+    <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
+      <a href="{{logoutUrl}}" data-mdc-auto-init="MDCRipple" class="mdc-top-app-bar__action-item mdc-button" aria-label="{{logoutText}}" alt="{{logoutText}}">{{logoutText}}</a>
     </section>
   </div>
 </header>
-<div id="header-pad"></div>
+<div id="header-pad" class="{{hideAppBar}}"></div>
 <div id="messages"></div>
 <div id="sendbox" data-mdc-auto-init="MDCTextField" class="mdc-text-field mdc-text-field--full-width width-100 mdc-text-field--with-trailing-icon">
   <input type="text" id="msgbox" class="mdc-text-field__input">
-  <label for="msg" class="mdc-floating-label">Message to send...</label>
-  <i class="mdc-text-field__icon" tabindex="0" id="sendbtn" role="button">Send</i>
+  <label for="msg" class="mdc-floating-label">{{sendLabel}}</label>
+  <i class="mdc-text-field__icon" tabindex="0" id="sendbtn" role="button">{{sendText}}</i>
   <div class="mdc-line-ripple"></div>
+</div>
+
+<aside id="dialog" data-mdc-auto-init="MDCDialog"
+  class="mdc-dialog"
+  role="alertdialog"
+  aria-labelledby="dialog-label"
+  aria-describedby="dialog-description">
+  <div class="mdc-dialog__surface">
+    <header class="mdc-dialog__header">
+      <h2 id="dialog-label" class="mdc-dialog__header__title">
+        Send us $10000? (Just joking)
+      </h2>
+    </header>
+    <section id="dialog-description" class="mdc-dialog__body">
+      Do you want to join KEEER Entertainment? If so, and you saw this message, send an email to alan-liang at keeer dot ga. Don't forget to add "from SSCS Source" in your email!
+    </section>
+    <footer class="mdc-dialog__footer">
+      <button type="button" class="mdc-button mdc-dialog__footer__button mdc-dialog__footer__button--accept">OK</button>
+    </footer>
+  </div>
+  <div class="mdc-dialog__backdrop"></div>
+</aside>
+
+<div class="mdc-snackbar" id="snackbar" data-mdc-auto-init="MDCSnackbar"
+     aria-live="assertive"
+     aria-atomic="true"
+     aria-hidden="true">
+  <div class="mdc-snackbar__text"></div>
+  <div class="mdc-snackbar__action-wrapper">
+    <button type="button" class="mdc-snackbar__action-button"></button>
+  </div>
 </div>
 <script src="./mdc.js"></script>
 <script>mdc.autoInit();var vc=new VConsole();</script>
+
+<script type="text/javascript">
+//time formatting
+//DO NOT MODIFY
+var timeago=function(time){
+	if(time=="")return "";
+	if(typeof time==typeof "")
+		time=new Date(time);
+	var now=new Date();
+	var diff=now.getTime()-time.getTime();
+	if(diff<10*1000) //10 sec
+		return "{{timeJustNow}}";
+	if(diff>365*24*60*60*1000) //1 year
+		return time.getFullYear()+"/"+(time.getMonth()+1)+"/"+time.getDate();
+	if(diff>30*24*60*60*1000) //1 month
+		return (time.getMonth()+1)+"/"+time.getDate();
+	if(diff>24*60*60*1000){ //1 day
+		var dayAgo=parseInt(diff/(24*60*60*1000));
+		var s=(dayAgo==1)?"":"s";
+		return dayAgo+" day"+s+" ago";
+	}
+	if(diff>60*60*1000){ //1h
+		var hrAgo=parseInt(diff/(60*60*1000));
+		var s=(hrAgo==1)?"":"s";
+		return hrAgo+" hour"+s+" ago";
+	}
+	if(diff>60*1000){ //1m
+		var minAgo=parseInt(diff/(60*1000));
+		var s=(minAgo==1)?"":"s";
+		return minAgo+" minute"+s+" ago";
+	}
+	var secAgo=parseInt(diff/1000);
+	var s=(secAgo==1)?"":"s";
+	return secAgo+" second"+s+" ago";
+};</script>
+
 <script type="text/javascript">
 var $=function(a){return document.getElementById(a);};
 function debug(str){
 	var debug=false;
 	if(debug)alert(str);
+	console.log("[DEBUG] "+str);
 }
 
 var templ=$("templ").innerHTML;
 var chatroom=$("messages");
 var msgbox=$("msgbox");
 var sendbtn=$("sendbtn");
+var snackbarbox=$("snackbar");
+var dialogbox=$("dialog");
+var dialogTitle=$("dialog-label");
+var dialogDesc=$("dialog-description");
+
+function snackbar(content,action,callback,timeout){
+	if(action===undefined)action="OK";
+	var obj;
+	if(typeof content==typeof {})
+		obj=content;
+	else obj={
+		message:content,
+		actionText:action,
+		timeout:timeout||5000,
+		actionHandler:callback||function(){}
+	};
+	snackbarbox.MDCSnackbar.show(obj);
+}
+
+var _alert=alert;
+alert=function(title,desc){
+	dialogTitle.innerHTML=title;
+	dialogDesc.innerHTML=desc||"";
+	dialogbox.MDCDialog.show();
+}
 
 var rc;
 try{
@@ -125,7 +229,7 @@ try{
 }catch(e){}
 var last=-1;
 function tpl(chatmsg,str,idn){
-	var st=/{{[a-zA-Z]*}}/gi;
+	var st=/{{[a-zA-Z0-9]*}}/gi;
 	var res="";
 	var comp;
 	var last=0;
@@ -136,7 +240,6 @@ function tpl(chatmsg,str,idn){
 		last=comp.index+comp[0].length;
 		var pps=str.substring(comp.index+2,last-2);
 		var val;
-		if(pps=="time")chatmsg[idn][pps]=new Date(chatmsg[idn][pps]).toString();
 		if(pps=="text" && (chatmsg[idn][pps].indexOf("@"+user)>-1))
 			chatmsg[idn][pps]="<font class=\"atme\">"+chatmsg[idn][pps]+"</font>";
 /*		if(pps=="text"&&/\[Code:.*\]/.test(chatmsg[idn][pps])){
@@ -154,6 +257,7 @@ function loadmsg(chatmsg,clearflag){
 	for(var i=0;i<chatmsg.length;i++){
 		newdiv=document.createElement("div");
 		newdiv.className="message-wrapper";
+		chatmsg[i].timeago=timeago(chatmsg[i].time);
 		newdiv.innerHTML=tpl(chatmsg,templ,i);
 		chatroom.appendChild(newdiv);
 		if(("#msg_"+chatmsg[i].id)==location.hash){
@@ -161,6 +265,13 @@ function loadmsg(chatmsg,clearflag){
 			setTimeout(function(){
 				window.scrollTo(0,off);
 			},10);
+			newdiv.firstElementChild.classList.add("focused");
+			(function(fc){
+				setTimeout(function(){
+					fc.classList.add("focused-blur");
+					fc.classList.remove("focused");
+				},500);
+			})(newdiv.firstElementChild);
 		}
 	}
 	debug(templ);
@@ -183,6 +294,10 @@ sendbtn.onclick=function(){
 msgbox.onkeypress=function(e){
 	if(e.charCode==13)sendbtn.onclick();
 };
+
+function showTime(time){
+	alert(new Date(time).toString());
+}
 
 function httpget(path,callback){
 	var xhr=new XMLHttpRequest();

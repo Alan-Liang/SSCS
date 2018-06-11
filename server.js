@@ -10,6 +10,7 @@ var fs=require("fs");
 var mime=require("mime");
 var url=require("url");
 var vurl=require("./vurl");
+var template=require("./template");
 var ws=require("ws");
 
 var sscs=exports=module.exports=function sscs(config){
@@ -21,17 +22,21 @@ var sscs=exports=module.exports=function sscs(config){
 var handleRequest=sscs.prototype.handleRequest=function(req,resp){
 	// Parse the request containing file name
 	var pathname = url.parse(req.url).pathname.substr(1);
+	cache=sscs.cache;
 	if(cache[pathname]){
 		var type=mime.lookup(pathname.substr(1));
-		resp.writeHead(200, {'Content-Type':type});	
-		resp.write(cache[pathname]);
+		if(type=="text/html")
+			type="text/html;charset=utf-8";
+		resp.writeHead(200, {'Content-Type':type});
+		var file=(type=="text/html;charset=utf-8")?this.processHtml(cache[pathname]):cache[pathname];	
+		resp.write(file);
 		resp.end();
 		return;
 	}
 	if(pathname==""){
 		var type="text/html";
 		resp.writeHead(200, {'Content-Type':type});	
-		resp.write(cache["index.html"]);
+		resp.write(this.processHtml(cache["index.html"]));
 		resp.end();
 		return;
 	}
@@ -49,6 +54,18 @@ var handleRequest=sscs.prototype.handleRequest=function(req,resp){
 		}
 	}
 };
+sscs.prototype.processHtml=function(str){
+	return template(str.toString(),this);
+};
+sscs.prototype.title="SSCS";
+sscs.prototype.hideAppBar=""; //set to "hidden" when hide
+sscs.prototype.loginTitle="Login | SSCS";
+sscs.prototype.logoutText="Logout";
+sscs.prototype.logoutUrl="/";
+sscs.prototype.sendText="Send";
+sscs.prototype.sendLabel="Message...";
+sscs.prototype.timeJustNow="Just Now";
+
 sscs.prototype.endl="\r\n";
 sscs.prototype.errmsg={
 	roomNotExist:"This room does not exist.",
