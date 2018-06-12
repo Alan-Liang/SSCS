@@ -196,10 +196,8 @@ sscs.prototype.startsvc=function(){
 		try{
 			this.server=http.createServer(this.handleRequest.bind(this));
 			this.server.listen(this.port,this.ipaddress);
-			if(this.ws){
-				this.wsServer=new ws.Server({server:this.server});
-				this.wsServer.on("connection",this.handleWs.bind(this));
-			}
+			this.wsServer=new ws.Server({server:this.server});
+			this.wsServer.on("connection",this.handleWs.bind(this));
 		}catch(e){
 			clog("Error listening on "+this.ipaddress+":"+this.port+": "+e);
 			this.server=undefined;
