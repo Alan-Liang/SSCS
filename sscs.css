@@ -1,0 +1,62 @@
+/* SSCS Stylesheet */
+/* commons */
+.sscs-width-100{
+	width:100%;
+}
+.sscs-align-center{
+	text-align:center;
+}
+[hidden], .sscs-hidden{
+	display:none;
+}
+.sscs-atme{
+	font-weight:bold;
+	color:#e00;
+}
+
+.sscs-header-pad{
+	height:64px;
+	margin:0;
+	padding:0;
+}
+.sscs-messages{
+	margin:10px;
+	margin-bottom:64px;
+}
+.sscs-message{
+	margin-top:8px;
+	padding:8px;
+}
+.sscs-sendbox-wrapper{
+	position:fixed;
+	width:100%;
+	bottom:0;
+	background:#fff;
+	opacity:0.7;
+}
+.sscs-sendbox{
+	margin:0;
+	padding:0;
+}
+.sscs-sendbtn{
+	margin:0;
+}
+.sscs-message-header{
+	display:table;
+	width:100%;
+}
+.sscs-message-head,.sscs-message-actions{
+	display:table-cell;
+}
+.sscs-message-actions{
+	width:32px;
+	padding:0;
+	min-height:0;
+	align:right;
+}
+.sscs-focused{
+	background:#fff9c4;
+}
+.sscs-focused-blur{
+	transition:ease-out background-color 1s;
+}
