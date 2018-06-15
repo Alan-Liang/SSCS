@@ -87,6 +87,10 @@ try{
 	a=a.substr(0,b);
 	user=a;
 }catch(e){}
+if(options.user)
+	user=options.user;
+if(options.rc)
+	rc=options.rc;
 var last=-1;
 function tpl(chatmsg,str,idn){
 	var st=/{{[a-zA-Z0-9]*}}/gi;
@@ -101,7 +105,7 @@ function tpl(chatmsg,str,idn){
 		var pps=str.substring(comp.index+2,last-2);
 		var val;
 		if(pps=="text" && (chatmsg[idn][pps].indexOf("@"+user)>-1))
-			chatmsg[idn][pps]="<font class=\"atme\">"+chatmsg[idn][pps]+"</font>";
+			chatmsg[idn][pps]="<font class=\"sscs-atme\">"+chatmsg[idn][pps]+"</font>";
 /*		if(pps=="text"&&/\[Code:.*\]/.test(chatmsg[idn][pps])){
 			/\[Code:.*\]/gi.exec(chatmsg[idn][pps]).index;
 		}*/
@@ -145,22 +149,28 @@ var ws = new WebSocket(wsLoc);
 var maxTries=7;
 var closeListener=function(e){
 	if(e.code!=1000){
+		//FIXME this is a hack on mdc that allow us to close snackbar programmatically
+		snackbarbox.MDCSnackbar.foundation_.actionClickHandler_();
 		debug("Retrying."+maxTries);
 		if(maxTries<=0){
 			alert("{{networkFault}}");
 			return;
 		}
 		maxTries--;
-		ws=new WebSocket(wsLoc);
-		ws.addEventListener('close',closeListener);
-		ws.onopen=wsOpen;
-		snackbar("{{reconnecting}}"," ",null,1e64);
+		setTimeout(function(){
+			ws=new WebSocket(wsLoc);
+			ws.addEventListener('close',closeListener);
+			ws.onopen=wsOpen;
+			snackbar("{{reconnecting}}"," ",null,1e64);
+		},1000);
 	}
 };
 ws.addEventListener('close',closeListener);
 
 var endl="\r\n";
-ws.onopen = wsOpen = function(event) {
+ws.onopen = wsOpen = function(event){
+  //FIXME
+  snackbarbox.MDCSnackbar.foundation_.actionClickHandler_();
   debug("WebSocket opened.");
   maxTries=7;
   ws._dataPile="";
@@ -207,21 +217,47 @@ ws.onopen = wsOpen = function(event) {
 };
 
 sendbtn.onclick=function(){
+	var snack=function(){
+		snackbar("{{messageSent}}","OK",function(){
+			msgbox.focus();
+		});
+	};
 	if(!(msgbox.value&&(msgbox.value!="")))return;
 	var obj={"time":new Date(),
 		"user":user,
 		"text":msgbox.value
 	};
 	ws.send("CHAT "+encodeURIComponent(JSON.stringify(obj))+endl);
-	snackbar("{{messageSent}}","OK",function(){
-		msgbox.focus();
-	});
+	snack();
+	//FIXME strange error (try commenting the following lines out)
+	if(!window.snacked){
+		snack();
+		window.snacked=true;
+	}
 	msgbox.value="";
 };
 
 msgbox.onkeypress=function(e){
 	if(e.charCode==13)sendbtn.onclick();
 };
+
+var onfocus=function(){
+	setTimeout(function(){
+		var flag=msgbox.parentElement.querySelector(".mdc-floating-label").classList.contains("mdc-floating-label--float-above");
+		if(flag&&!msgbox.isFilled){
+			msgbox.isFilled=true;	
+			msgbox.parentElement/* .sscs-sendbox*/.style.height="48px";
+			return;
+		}
+		if(!flag&&msgbox.isFilled){
+			msgbox.isFilled=false;
+			msgbox.parentElement.style.height="";
+			return;
+		}
+	},10);
+};
+msgbox.addEventListener("focus",onfocus);
+msgbox.addEventListener("blur",onfocus);
 
 };
 sscs.showTime=function(time){

@@ -30,7 +30,7 @@ Login error:<br />
 {{err}}<br />
 <a href="{{logoutUrl}}" data-mdc-auto-init="MDCRipple" class="mdc-button">{{logoutText}}</a>
 </script>
-<script type="text/javascript" src="https://res.wx.qq.com/mmbizwap/zh_CN/htmledition/js/vconsole/3.0.0/vconsole.min.js"></script>
+<!--script type="text/javascript" src="https://res.wx.qq.com/mmbizwap/zh_CN/htmledition/js/vconsole/3.0.0/vconsole.min.js"></script-->
 </head>
 <body>
 <header class="sscs-app-bar mdc-top-app-bar mdc-elevation--z5 sscs-{{hideAppBar}}" id="appbar" data-mdc-auto-init="MDCTopAppBar">
@@ -46,8 +46,8 @@ Login error:<br />
 <div id="header-pad" class="sscs-header-pad {{hideAppBar}}"></div>
 <div id="messages" class="sscs-messages"></div>
 <div class="sscs-sendbox-wrapper">
-<div id="sendbox" data-mdc-auto-init="MDCTextField" class="mdc-text-field mdc-text-field--full-width sscs-width-100 mdc-text-field--with-trailing-icon sscs-sendbox">
-  <input type="text" id="msgbox" class="sscs-msgbox mdc-text-field__input">
+<div id="sendbox" data-mdc-auto-init="MDCTextField" class="mdc-text-field sscs-width-100 mdc-text-field--with-trailing-icon sscs-sendbox a b c d">
+  <input type="text" id="msgbox" class="mdc-text-field__input sscs-msgbox a">
   <label for="msgbox" class="mdc-floating-label">{{sendLabel}}</label>
   <a class="sscs-sendbtn mdc-text-field__icon" tabindex="0" id="sendbtn" role="button">{{sendText}}</a>
   <div class="mdc-line-ripple"></div>
@@ -84,7 +84,8 @@ Login error:<br />
   </div>
 </div>
 <script src="./mdc.js"></script>
-<script>mdc.autoInit();var vc=new VConsole();</script>
+<script>mdc.autoInit();//var vc=new VConsole();
+</script>
 <script src="./sscs.js"></script>
 <script type="text/javascript">
 var $=function(a){return document.getElementById(a);};

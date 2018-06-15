@@ -182,15 +182,7 @@ sscs.prototype.pushHistory=function(trc,obj){
 sscs.prototype.getHistory=function(rc){
 	return this.history[rc];
 };
-sscs.prototype.getNews=function(rc,last){
-	var news=[],hist=this.history[rc];
-	for(var i=0;i<hist.length;i++){
-		if(hist[i].id>=last){
-			news.push(hist[i]);
-		}
-	}
-	return news;
-};
+
 sscs.prototype.startsvc=function(){
 	if(!this.server){
 		try{

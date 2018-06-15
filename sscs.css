@@ -26,20 +26,29 @@
 .sscs-message{
 	margin-top:8px;
 	padding:8px;
+	word-wrap: break-word;
 }
 .sscs-sendbox-wrapper{
 	position:fixed;
 	width:100%;
+	padding:5px;
 	bottom:0;
 	background:#fff;
-	opacity:0.7;
+	min-height:32px;
+	height:auto;
+	box-shadow: 0px -3px 5px -1px rgba(0, 0, 0, 0.2), 0px 5px 8px 0px rgba(0, 0, 0, 0.14), 0px 1px 14px 0px rgba(0, 0, 0, 0.12);
 }
-.sscs-sendbox{
+.sscs-sendbox/* FIXME the following classes are only used to increase importancy */.a.b.c.d{
 	margin:0;
 	padding:0;
+	height:32px;
+	transition:height ease-in-out 0.1s;
 }
-.sscs-sendbtn{
-	margin:0;
+.sscs-sendbtn/* FIXME */.mdc-text-field__icon{
+	bottom:6px;
+}
+.sscs-msgbox/* FIXME */.a{
+	padding-left:0;
 }
 .sscs-message-header{
 	display:table;
@@ -47,12 +56,14 @@
 }
 .sscs-message-head,.sscs-message-actions{
 	display:table-cell;
+	word-wrap: break-word;
 }
 .sscs-message-actions{
-	width:32px;
+	position:absolute;
+	right:5px;
 	padding:0;
 	min-height:0;
-	align:right;
+	text-align:right;
 }
 .sscs-focused{
 	background:#fff9c4;
