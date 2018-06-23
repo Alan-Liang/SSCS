@@ -5,5 +5,5 @@ var server=new sscs({
 	rc:["room1","room2"], //Room codes
 	port:8080
 });
-s.startsvc();
-//s.stopsvc();
+server.startsvc();
+//server.stopsvc();

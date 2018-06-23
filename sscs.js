@@ -137,6 +137,12 @@ function loadmsg(chatmsg,clearflag){
 				},500);
 			})(newdiv.firstElementChild);
 		}
+		if(i==chatmsg.length-1&&clearflag){
+			var off=newdiv.offsetTop;
+			setTimeout(function(){
+				window.scrollTo(0,off);
+			},10);
+		}
 	}
 	debug(templ);
 	var a=chatmsg[chatmsg.length-1];
