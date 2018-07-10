@@ -1,3 +1,6 @@
+# Important! This branch is abandoned and reserved for historical use. Do not use this as it is outdated.
+Original file content:
+
 # SSCS
 Simple and Slow Chatting Service
 
