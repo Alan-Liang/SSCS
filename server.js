@@ -6,10 +6,10 @@
  *https://github.com/Alan-Liang/SSCS
  */
 
-var rc=[];
+exports.rc=[];
 
-var ipaddress = "127.0.0.1";
-var port      = 8080;
+exports.ipaddress = "127.0.0.1";
+exports.port      = 8080;
 
 var http=require("http");
 var fs=require("fs");
@@ -17,7 +17,7 @@ var mime=require('mime');
 var url=require('url');
 var vurl=require('./vurl');
 
-var chistory={};
+exports.chistory={};
 
 var listeningFunc=function(req,resp){
 	// Parse the request containing file name
@@ -30,15 +30,15 @@ var listeningFunc=function(req,resp){
 		return;
 	}
 	if(vurl.query(pathname)){
-		try{
+//		try{
 			(vurl.query(pathname))(req,resp);
 			return;
-		}catch(e){
+	/*	}catch(e){
 			clog("Error executing "+pathname+" : "+e);
 			resp.writeHead(501, {'Content-Type':'text/plain'});	
 			resp.end();
 			return;
-		}
+		}*/
 	}
 };
 
@@ -51,21 +51,33 @@ function clog(str){
 	//clogi.innerHTML+=("["+time+"] "+str+"\n");
 };
 
-startsvc=function(){
+exports.startsvc=function(){
 	if(!server){
 		try{
 			server=http.createServer(listeningFunc);
-			server.listen(port,ipaddress);
+			server.listen(this.port,this.ipaddress);
 		}catch(e){
-			clog("Error listening on "+ipaddress+":"+port+": "+e);
+			clog("Error listening on "+this.ipaddress+":"+this.port+": "+e);
 			server=undefined;
 			return;
 		}
-		clog("Server started, listening on "+ipaddress+":"+port+".");
+		clog("Server started, listening on "+this.ipaddress+":"+this.port+".");
+	}
+	var hist;
+	try{
+		hist=fs.readFileSync("history.json");
+		hist=JSON.parse(hist);
+		exports.chistory=hist?hist:{};
+	}catch(e){
+		clog("Error reading history: "+e);
+		exports.chistory={};
+		for(var i=0;i<exports.rc.length;i++){
+			exports.chistory[exports.rc[i]]=[];
+		}
 	}
 };
 
-stopsvc=function(){
+exports.stopsvc=function(){
 	if(server){
 		try{
 			server.close();
@@ -78,44 +90,30 @@ stopsvc=function(){
 	}
 };
 
-var hist;
-try{
-	hist=fs.readFileSync("history.json");
-	hist=JSON.parse(hist);
-	chistory=hist?hist:{};
-}catch(e){
-	clog("Error reading history: "+e);
-	chistory={};
-	for(var i=0;i<rc.length;i++){
-		chistory[rc[i]]=[];
-	}
-}
-
-startsvc();
-
 var loadpages=["chat.html","gs.css"];
 for(var i=0;i<loadpages.length;i++){
 	try{
-		var page=fs.readFileSync(loadpages[i]);
+		var page=fs.readFileSync("./node_modules/sscs/"+loadpages[i]);
 		cache[loadpages[i]]=page;
 	}catch(e){
 		clog("Error reading file "+loadpages[i]+" : "+e);
 	}
 }
 
-function pendReq(req){
+this.pendReq=function(req){
     var params = url.parse(req.url,true).query;
-	for(var i=0;i<rc.length;i++)
-		if(params["rc"]==rc[i])return rc[i];
+	for(var i=0;i<exports.rc.length;i++)
+		if(params["rc"]==exports.rc[i])return exports.rc[i];
 	return false;
 }
+var pendReq=this.pendReq;
 
 //add listening functions
 vurl.add={path:"webapi/history",func:function(req,resp){
 	var trc;
 	if((trc=pendReq(req))!=false){
 		resp.writeHead(200, {'Content-Type':'application/json'});
-		resp.write(JSON.stringify({chistory:chistory[trc]}));
+		resp.write(JSON.stringify({chistory:exports.chistory[trc]}));
 		resp.end();
 		return;
 	}
@@ -130,11 +128,11 @@ vurl.add={path:"webapi/new",func:function(req,resp){
 		if(params["last"]){
 			resp.writeHead(200, {'Content-Type':'application/json'});
 			resp.write("{\"nw\":[");
-			for(var i=chistory[trc].length-1;i>=0;i--){
-				if(chistory[trc][i].id==params.last){
-					for(var c=i;c<chistory[trc].length;c++){
-						resp.write(JSON.stringify(chistory[trc][c]));
-						if((c+1)<chistory[trc].length)resp.write(",");
+			for(var i=exports.chistory[trc].length-1;i>=0;i--){
+				if(exports.chistory[trc][i].id==params.last){
+					for(var c=i;c<exports.chistory[trc].length;c++){
+						resp.write(JSON.stringify(exports.chistory[trc][c]));
+						if((c+1)<exports.chistory[trc].length)resp.write(",");
 					}
 				}
 			}
@@ -163,19 +161,19 @@ vurl.add={path:"webapi/add",func:function(req,resp){
 			try{
 				var params = JSON.parse(postData);
 				if(params["time"]&&params["user"]&&params["text"]){
-					chistory[trc].push({
+					exports.chistory[trc].push({
 						time:decodeURI(params.time),
 						user:decodeURI(params.user),
 						text:decodeURI(params.text),
-						id:chistory[trc].length
+						id:exports.chistory[trc].length
 						});
 					try{
-						fs.writeFileSync("./history.json",JSON.stringify(chistory));
+						fs.writeFileSync("./history.json",JSON.stringify(exports.chistory));
 					}catch(e){
 						clog("Error writing history file :"+e);
 					}
 					resp.writeHead(200, {'Content-Type':'application/json'});
-					resp.write("{status:"+(chistory[trc].length-1)+"}");
+					resp.write("{status:"+(exports.chistory[trc].length-1)+"}");
 					resp.write(postData);
 				}
 				else{
@@ -195,15 +193,15 @@ vurl.add={path:"webapi/add",func:function(req,resp){
 		resp.end();
 	}
 }};
-var loginp;
 try{
-	loginp=fs.readFileSync("main.html");
+	exports.loginp=fs.readFileSync("./node_modules/sscs/main.html");
 }catch(e){
 	clog("Error reading file main.html : "+e);
+	loginp="";
 }
 vurl.add={path:"",func:function(req,resp){
 	resp.writeHead(200, {'Content-Type':'text/html'});
-	resp.write(loginp);
+	resp.write(exports.loginp);
 	resp.end();
 }};
 
