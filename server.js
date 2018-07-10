@@ -7,8 +7,10 @@
  */
 
 var fs=require("fs");
+var log=require("./log")("sscs");
 var mime=require("mime");
 var url=require("url");
+var http=require("http");
 var template=require("./template");
 var ws=require("ws");
 
@@ -93,7 +95,13 @@ var handleWs=sscs.prototype.handleWs=function(wsc,req){
 		wscs=wscs[trc];
 		wsc._dataPile="";
 		var endl=this.endl;
-		wsc.send("HIST "+encodeURIComponent(JSON.stringify(this.getHistory(trc)))+endl);
+		var hist=this.getHistory(trc);
+		if(hist&&typeof hist.then==typeof function(){}){ //Promise
+			hist.then(function(hist){
+				wsc.send("HIST "+encodeURIComponent(JSON.stringify(hist))+endl);
+			});
+		}else
+			wsc.send("HIST "+encodeURIComponent(JSON.stringify(hist))+endl);
 		wsc.addEventListener('message',function(msg){
 			wsc._dataPile+=msg.data;
 			var cmds=wsc._dataPile.split(endl);
@@ -149,8 +157,9 @@ var handleWs=sscs.prototype.handleWs=function(wsc,req){
 var cache=sscs.cache={};
 
 function clog(str){
-	var time=new Date().toLocaleString();
-	console.log("["+time+"] "+str+"\n");
+	log.info(str);
+	//var time=new Date().toLocaleString();
+	//console.log("["+time+"] "+str+"\n");
 	//clogi.innerHTML+=("["+time+"] "+str+"\n");
 };
 
@@ -198,7 +207,14 @@ sscs.prototype.startsvc=function(){
 		clog("Server started, listening on "+this.ipaddress+":"+this.port+".");
 	}
 	//doAction
-	this.history=this.loadHistory();
+	var hist=this.loadHistory();
+	if(hist&&typeof hist.then==typeof function(){}){ //Promise
+		hist.then(function(hist){
+			this.history=hist;
+		}.bind(this));
+	}else{
+		this.history=hist;
+	}
 	this.loadPages();
 	//doAction
 	clog("History loaded.");
